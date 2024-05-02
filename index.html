@@ -1,36 +1,93 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Home Page</title>
-</head>
-<style>
-	* { margin: 0; padding: 0; }
-	body { font-family: arial; margin: 0 auto; width: 1400px; }
-	nav { width: 100%; padding: 5px; border: 3px solid #a0a0a0; margin-top: 10px; border-radius: 10px; }
-	nav ul { background: #0690a7; text-align: center; padding-right: 20px; padding: 20px; border-radius: 10px; }
-	nav ul li { display: inline-block; padding-right: 10px; }
-	nav ul li a { color: #fff; text-decoration: none; }
-	nav ul li a:hover { color: #ffd4d4; }
-	.slider { height: 200px; background: grey; border-radius: 10px; width: 100%; margin-top: 10px; padding: 5px; vertical-align: middle; }
-	.slider h2 { text-align: center; color: #fff; }
-</style>
-<body>
-	<header>
-		<nav>
-			<ul>
-				<li><a href="#">Home</a></li>
-				<li><a href="#">About Us</a></li>
-				<li><a href="#">Contact Us</a></li>
-				<li><a href="#">Our Mission</a></li>
-			</ul>
-		</nav>
-	</header>
-	<section>
-		<div class="slider">
-			<h2>Slider Goes Here !</h2>
-		</div>
-	</section>
-</body>
+<!doctype html>
+<html lang="en-us">
+  <head>
+    <meta charset="utf-8" />
+    <!-- Make sure to load the highlight.js CSS file before the Diff2Html CSS file -->
+    <link rel="stylesheet" href="assets/css/github-highlight-light.min.css" />
+    <link rel="stylesheet" type="text/css" href="assets/css/style.css" />
+    <script type="text/javascript" src="assets/js/difftohtml.min.js"></script>
+  </head>
+  <script>
+    const diffString = `diff --git a/salesforce_frontend_combined/.svn/wc.db b/salesforce_frontend_combined/.svn/wc.db
+index 0925c15..59a12e3 100644
+Binary files a/salesforce_frontend_combined/.svn/wc.db and b/salesforce_frontend_combined/.svn/wc.db differ
+diff --git a/salesforce_frontend_combined/htdocs/html/misc/exportleads.php b/salesforce_frontend_combined/htdocs/html/misc/exportleads.php
+index c333154..5af9baa 100644
+--- a/salesforce_frontend_combined/htdocs/html/misc/exportleads.php
++++ b/salesforce_frontend_combined/htdocs/html/misc/exportleads.php
+@@ -34,7 +34,7 @@ $prefix = $parameters[13];
+ $blLeads = new BL_Leads();
+ $leads = $blLeads->getLeadsForExport($userIdSearch,$userDesignation,$leadStatusSearch,$regionSearch,$areaSearch,$branchSearch,$leadSource,$minDate,$maxDate,$search_column,$search_keyword,$leadType,$leadCampaignId);
+ 
+-$headers = [ 'lead_id', 'channel', 'region', 'area', 'branch', 'first_name', 'last_name', 'mobile_phone_number', 'office_phone_number', 'home_phone_number', 'product', 'lead_status', 'user_name', 'user_code', 'user_designation', 'currently_assigned', 'date', 'comments' ];
++$headers = [ 'lead_id', 'channel', 'region', 'area', 'branch', 'first_name', 'last_name', 'mobile_phone_number', 'office_phone_number', 'home_phone_number', 'product', 'lead_status', 'user_name', 'user_code', 'user_designation', 'currently_assigned', 'expected_amount', 'date', 'comments' ];
+ 
+ $filename = "leads $minDate to $maxDate.xlsx";
+ $filePath = UPLOAD_DIRECTORY_PATH . $filename;
+@@ -75,6 +75,7 @@ foreach($leads as $lead)
+         (in_array($prefix, [ 'sfts2', 'bipl' ])) ? $lead['login_id'] : $lead['user_code'],
+         $lead['user_designation'],
+         $currently_assigned,
++        $lead['expected_amount'],
+         $lead['created_at'],
+         $lead['comment']
+     ];
+diff --git a/salesforce_frontend_combined/htdocs/modules/class/ajax/general/lead.php b/salesforce_frontend_combined/htdocs/modules/class/ajax/general/lead.php
+index b9d67e4..b2f5452 100644
+--- a/salesforce_frontend_combined/htdocs/modules/class/ajax/general/lead.php
++++ b/salesforce_frontend_combined/htdocs/modules/class/ajax/general/lead.php
+@@ -850,7 +850,7 @@ function ExportLeadsCSV($userIdSearch,$userDesignation,$leadStatusSearch,$region
+     $leads = $blLeads->getLeadsForExport($userIdSearch,$userDesignation,$leadStatusSearch,$regionSearch,$areaSearch,$branchSearch,$leadSource,$minDate,$maxDate,$search_column,$search_keyword,$leadType,$leadCampaignId);
+ 
+     
+-    $headers = [ 'lead_id', 'channel', 'region', 'area', 'branch', 'first_name', 'last_name', 'mobile_phone_number', 'office_phone_number', 'home_phone_number', 'product', 'lead_status', 'user_name', 'user_code', 'user_designation', 'currently_assigned', 'date', 'comments' ];
++    $headers = [ 'lead_id', 'channel', 'region', 'area', 'branch', 'first_name', 'last_name', 'mobile_phone_number', 'office_phone_number', 'home_phone_number', 'product', 'lead_status', 'user_name', 'user_code', 'user_designation', 'currently_assigned', 'expected_amount', 'date', 'comments' ];
+     
+     // ------------- Export CSV --------------//
+     $filename = "leads $minDate to $maxDate.csv";
+@@ -892,6 +892,7 @@ function ExportLeadsCSV($userIdSearch,$userDesignation,$leadStatusSearch,$region
+             'user_code' => (in_array($prefix, [ 'sfts2', 'bipl' ])) ? $lead['login_id'] : $lead['user_code'],
+             'user_designation' => $lead['user_designation'],
+             'currently_assigned' => $currently_assigned,
++            'expected_amount' => $lead['expected_amount'],
+             'date' => $lead['created_at'],
+             'comments' => $lead['comment']
+         ];
+diff --git a/salesforce_frontend_combined/htdocs/modules/class/datalayer/sfts2/leads.php b/salesforce_frontend_combined/htdocs/modules/class/datalayer/sfts2/leads.php
+index 16e05b3..29c3b70 100644
+--- a/salesforce_frontend_combined/htdocs/modules/class/datalayer/sfts2/leads.php
++++ b/salesforce_frontend_combined/htdocs/modules/class/datalayer/sfts2/leads.php
+@@ -457,7 +457,8 @@ class DL_Leads extends DataAccessBase
+                 cd.role_name AS user_designation,
+                 cb_user.branch_name as user_branch,
+                 ca_user.area_name as user_area,
+-                cr_user.region_name as user_region
++                cr_user.region_name as user_region,
++                l.expected_amount
+             FROM leads l
+             INNER JOIN lead_sources ls ON l.source = ls.record_id 
+             LEFT JOIN lead_statuses lss ON lss.record_id = l.lead_status 
+`;
+
+    document.addEventListener('DOMContentLoaded', function () {
+      var targetElement = document.getElementById('myDiffElement');
+      var configuration = {
+        drawFileList: true,
+        fileListToggle: false,
+        fileListStartVisible: false,
+        fileContentToggle: false,
+        matching: 'lines',
+        outputFormat: 'side-by-side',
+        synchronisedScroll: true,
+        highlight: true,
+        renderNothingWhenEmpty: false,
+      };
+      var diff2htmlUi = new Diff2HtmlUI(targetElement, diffString, configuration);
+      diff2htmlUi.draw();
+      diff2htmlUi.highlightCode();
+    });
+  </script>
+  <body>
+    <div id="myDiffElement"></div>
+  </body>
 </html>
